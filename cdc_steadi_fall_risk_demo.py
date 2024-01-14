@@ -16,7 +16,7 @@ https://www.cdc.gov/steadi/pdf/STEADI-Algorithm-508.pdf
 
 DEBUG_MODE = False
 # simulation mode so you don't have to click to get a nice distribution in the database for figures
-SIMULATE_PATIENT_MODE = True
+SIMULATE_PATIENT_MODE = False
 N_SIMULATED_PATIENTS_PER_ROUND=100
 
 # debugging to look at the json blob to be flattened and written
@@ -113,8 +113,11 @@ if SIMULATE_PATIENT_MODE:
                 database_df = pd.read_csv(database_path, header=0)
                 print(database_df.shape)
                 print(pd.json_normalize(pt_dict).shape)
-            database_df = pd.concat([database_df, pd.json_normalize(pt_dict)], ignore_index=True)
-            database_df.to_csv(database_path, index=False)
+                database_df = pd.concat([database_df, pd.json_normalize(pt_dict)], ignore_index=True)
+                database_df.to_csv(database_path, index=False)
+            except:
+                print('EXCEPT')
+                database_df = pd.json_normalize(pt_dict).to_csv(database_path, index=False)
         else:
             print('NO ExiSTE')
             pd.json_normalize(pt_dict).to_csv(database_path, index=False)
@@ -147,9 +150,9 @@ with st.form(key='input_form'):
         st.markdown(f'### {question_dict["statement"]}')
         st.markdown(f'Why we ask: {question_dict["reason"]}')
         if DEBUG_MODE:
-            temp_response = st.radio(label='Answer:', options=['yes', 'no', 'not Answered'], index=np.random.randint(2), key=f'question_{question_number}')
+            temp_response = st.radio(label='Answer:', options=['yes', 'no', 'not answered'], index=np.random.randint(2), key=f'question_{question_number}')
         else:    
-            temp_response = st.radio(label='Answer:', options=['yes', 'no', 'not Answered'], index=2, key=f'question_{question_number}')
+            temp_response = st.radio(label='Answer:', options=['yes', 'no', 'not answered'], index=2, key=f'question_{question_number}')
         pt_dict['survey_data']['questions'][question_number]['response'] = temp_response
 
     pt_dict['survey_data']['patient_notes'] = st.text_input(label='Additional notes:')

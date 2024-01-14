@@ -16,7 +16,7 @@ https://www.cdc.gov/steadi/pdf/STEADI-Algorithm-508.pdf
 
 DEBUG_MODE = False
 # simulation mode so you don't have to click to get a nice distribution in the database for figures
-SIMULATE_PATIENT_MODE = False
+SIMULATE_PATIENT_MODE = True
 N_SIMULATED_PATIENTS_PER_ROUND=100
 
 # debugging to look at the json blob to be flattened and written
@@ -30,7 +30,7 @@ steadi_independent_loc = './ignore_data/steadi_independent.csv'
 
 # make a mock database file with a csv (not going to work w/schema evolution but placeholder)
 # you can write back to snowflake, see example above
-database_path = f'{save_location}database4a.csv'
+database_path = f'{save_location}database5.csv'
 
 def ingest_csv(path):
     df = pd.read_csv(path)
@@ -101,14 +101,13 @@ if SIMULATE_PATIENT_MODE:
     ctr=0
     for i in range(N_SIMULATED_PATIENTS_PER_ROUND):
         ctr+=1
-        print(f'{i} i counter... {ctr}')
+        print(f'{i} debug i counter... {ctr}')
         pt_dict = simulate_patient()
         pt_dict['db_timestamp'] = pd.Timestamp(datetime.now())
         pt_dict['patient_id'] = abs(hash(pt_dict['demographics']['first_name'] + pt_dict['demographics']['last_name'] + pt_dict['demographics']['dob'].strftime('%Y-%m-%d')))
         pt_dict['record_id'] = abs(hash(pt_dict['demographics']['first_name'] + pt_dict['demographics']['last_name'] + pt_dict['demographics']['dob'].strftime('%Y-%m-%d') + pt_dict['db_timestamp'].strftime('%Y-%m-%d %H:%M:%S')))
         if os.path.exists(database_path):
             print('IN SIM')
-            
             try:
                 database_df = pd.read_csv(database_path, header=0)
                 print(database_df.shape)
@@ -296,7 +295,13 @@ if send_to_database:
         # get x tick labels
         xtick_label_text = [label.get_text() for label in ax.get_xticklabels()]
 
-        pt_score_pos = xtick_label_text.index(str(pt_dict['survey_data']['score']))
+        # patch: cold start is a bit messy with dynamic axes (don't have figured out yet)
+        try:
+            pt_score_pos = xtick_label_text.index(str(pt_dict['survey_data']['score']))
+        except:
+            # e.g. corner case zero isn't represented so fall-back to score itself
+            print('<<<<<<<<< DEBUG EXCEPTING x-tick score lookup')
+            pt_score_pos = str(pt_dict['survey_data']['score'])
 
         # vertical line at score
         ax.axvline(x=pt_score_pos, color='black', linestyle='--', label='Patient Score')
